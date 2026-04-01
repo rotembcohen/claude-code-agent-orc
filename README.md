@@ -97,7 +97,7 @@ Before installing many of the tools, you'll need Node.js and a package manager. 
     * Install using `curl -fsSL https://claude.ai/install.sh | bash`
 
 *   **Discord Plugin (for Claude Code):**
-    Plugin authored by Claude for using Discord with 2-direction communication with Claude Code. See limitation on only 1 global discord active in a time.
+    Enables 2-way communication with Claude Code via Discord. By default, only one global Discord bot can be active at a time; for multi-project setups, see [Project-Level Discord Bot Setup](#project-level-discord-bot-setup).
     * Installation instructions are here: https://github.com/anthropics/claude-plugins-official/blob/main/external_plugins/discord/README.md 
 
 *   **NotebookLM:**
@@ -202,9 +202,83 @@ For detailed instructions and workflow rules, refer to [teamlead_example.md](./t
 -   `#commit`: Commits staged changes with a formatted message, but does not push.
 -   `#test`: (Implied as part of the overall workflow) Involves presenting a test plan for manual verification.
 
+## Project-Level Discord Bot Setup
+
+This setup allows you to run multiple Discord bots for different projects, bypassing the single-global-bot limitation.
+
+### 1. Create the state directory
+
+```bash
+mkdir -p .claude/channels/discord
+```
+
+### 2. Add your bot token
+
+Create `.claude/channels/discord/.env`:
+```
+DISCORD_BOT_TOKEN=your_bot_token_here
+```
+
+Then secure it:
+```bash
+chmod 600 .claude/channels/discord/.env
+```
+
+### 3. Configure the environment variable
+
+Create or edit `.claude/settings.local.json`:
+```json
+{
+  "env": {
+    "DISCORD_STATE_DIR": ".claude/channels/discord"
+  }
+}
+```
+
+If relative path doesn't work, use absolute: `"/full/path/to/project/.claude/channels/discord"`
+
+### 4. Add to .gitignore
+
+Append to your `.gitignore`:
+```
+.claude/channels/discord/.env
+```
+
+### 5. Start Claude Code with channels
+
+```bash
+claude --channels plugin:discord@claude-plugins-official
+```
+
+### 6. Pairing (manual workaround)
+
+The `/discord:access` skill has a bug — it ignores `DISCORD_STATE_DIR` and reads from the global path.
+
+To pair manually:
+
+1. DM your bot on Discord — it replies with a code
+2. Check your project's `access.json` for the pending entry:
+   ```bash
+   cat .claude/channels/discord/access.json
+   ```
+3. Edit the file: move the `senderId` from `pending` to `allowFrom`, then clear `pending`:
+   ```json
+   {
+     "dmPolicy": "pairing",
+     "allowFrom": ["<senderId from pending>"],
+     "groups": {},
+     "pending": {}
+   }
+   ```
+4. Create the approval notification:
+   ```bash
+   mkdir -p .claude/channels/discord/approved
+   echo "<chatId from pending>" > .claude/channels/discord/approved/<senderId>
+   ```
+
 ## Current Limitations
 
-1.  **Single Team Lead via Discord:** With the current setup, it is only possible to control one Team Lead agent via Discord. This prevents working on multiple distinct projects concurrently through Discord.
+1.  **Single Team Lead via Discord:** With the default setup, it is only possible to control one Team Lead agent via Discord. This prevents working on multiple distinct projects concurrently through Discord. **Workaround:** Use a project-level Discord bot setup. See [Project-Level Discord Bot Setup](#project-level-discord-bot-setup).
 2.  **AI Hallucinations and `/compact` Problem:** AI models, particularly Claude, can experience hallucinations. A specific issue arises with prompt compaction (often an internal mechanism like `/compact`), where the AI may compact prompts without explicit human notification. This often leads to loss of context and/or increased hallucinations in subsequent responses.
 3.  **Frequently Ignored AI Commands:** The AI frequently ignores specific instructions, such as directives not to spawn agents without explicit permission or to avoid solving problems autonomously without delegation. This requires careful monitoring and re-instruction.
 4.  **Rate Limits and Cost:**
