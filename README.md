@@ -278,7 +278,7 @@ To pair manually:
 
 ## Current Limitations
 
-1.  **Single Team Lead via Discord:** With the default setup, it is only possible to control one Team Lead agent via Discord. This prevents working on multiple distinct projects concurrently through Discord. **Workaround:** Use a project-level Discord bot setup. See [Project-Level Discord Bot Setup](#project-level-discord-bot-setup).
+1.  **Single Team Lead via Discord:** With the default setup, it is only possible to control one Team Lead agent via Discord. ~~This prevents working on multiple distinct projects concurrently through Discord.~~ **Workaround:** Use a project-level Discord bot setup. See [Project-Level Discord Bot Setup](#project-level-discord-bot-setup).
 2.  **AI Hallucinations and `/compact` Problem:** AI models, particularly Claude, can experience hallucinations. A specific issue arises with prompt compaction (often an internal mechanism like `/compact`), where the AI may compact prompts without explicit human notification. This often leads to loss of context and/or increased hallucinations in subsequent responses.
 3.  **Frequently Ignored AI Commands:** The AI frequently ignores specific instructions, such as directives not to spawn agents without explicit permission or to avoid solving problems autonomously without delegation. This requires careful monitoring and re-instruction.
 4.  **Rate Limits and Cost:**
