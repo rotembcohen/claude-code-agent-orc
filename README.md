@@ -164,43 +164,109 @@ This sequence ensures that Claude Code runs within a persistent and manageable t
 
 ## Custom Agent Methodology
 
-- All custom agent data is handled by Markdown files originating from this project, which should be copied to any new project and customized accordingly.
-- All documentation should reside in the `docs/` folder of every project. The recommended directory structure is as follows:
+Agent definitions use **Claude Code Agent Teams** and must be placed in `.claude/agents/` with YAML frontmatter.
+
+### Directory Structure
 
 ```
 project-root/
-├── docs/
+├── .claude/
+│   └── agents/
+│       ├── teamlead.md
+│       ├── planner.md
+│       ├── devils-advocate.md
+│       ├── archivist.md
+│       ├── frontend-dev.md  (or swift-dev for iOS)
+│       ├── backend-dev.md
+│       └── reviewer.md
+├── documentation/
 │   ├── BACKLOG.md
 │   ├── PRD.md
-│   ├── TDD.md
-│   ├── ...
-│   ├── agents/
-│       ├── teamlead.md
-│       └── ...
-│   └── tasks/
-│       ├── T001_task_description.md
-│       └── ...
+│   ├── tasks/
+│   │   └── T001_task_description.md
+│   └── ...
+├── CLAUDE.md
 ├── .gitignore
-├── README.md
-└── ...
+└── README.md
 ```
 
-- We use `#` commands to curate agent actions, providing control over task prioritization and execution sequence.
-- These `#` commands are documented in the `docs/` folder.
-- We are not using skills yet, as the current methodology is preferred. This may change in the future.
+### Agent File Format
+
+Each agent file in `.claude/agents/` requires YAML frontmatter:
+
+```markdown
+---
+name: planner
+description: Creates detailed implementation plans from task descriptions
+tools: Read, Glob, Grep
+model: sonnet
+---
+
+# Planner — Instructions & Role
+
+[Agent-specific instructions here...]
+```
+
+**Frontmatter fields:**
+- `name`: Agent identifier (used in `subagent_type`)
+- `description`: One-line summary of role
+- `tools`: Comma-separated list of allowed tools
+- `model`: `opus`, `sonnet`, or `haiku`
+
+### CLAUDE.md Setup
+
+Add the `#team` command to your project's `CLAUDE.md`:
+
+```markdown
+## Team Orchestration
+
+This project uses **Claude Code Agent Teams**. Agent definitions are in `.claude/agents/`.
+
+### `#team`
+When user says `#team`:
+1. Read `.claude/agents/teamlead.md` and act as teamlead for the session
+2. Check `TaskList` for existing team — if team exists, use `SendMessage` to reach teammates
+3. If no team exists, create skeleton team:
+   ```
+   TeamCreate({ team_name: "myproject", description: "Project development team" })
+   ```
+4. Spawn initial teammates (planner, devils-advocate, archivist):
+   ```
+   Agent({ team_name: "myproject", name: "planner", subagent_type: "planner", prompt: "You are the planner. Read .claude/agents/planner.md for your instructions. Idle until assigned work." })
+   Agent({ team_name: "myproject", name: "devils-advocate", subagent_type: "devils-advocate", prompt: "..." })
+   Agent({ team_name: "myproject", name: "archivist", subagent_type: "archivist", prompt: "..." })
+   ```
+5. Spawn additional teammates (devs, reviewer, etc.) on demand when work requires them
+```
+
+### How Agent Teams Work
+
+1. **TeamCreate** creates the team and shared task list
+2. **Agent** with `team_name` + `name` spawns a teammate (not a subagent)
+3. **TaskCreate/TaskList/TaskUpdate** manage shared tasks
+4. **SendMessage** enables inter-agent communication
+
+**Key difference from subagents:** Teammates have separate context windows, run in parallel, and communicate via messages. Subagents share context with the parent.
+
+### Skeleton Team Approach
+
+Start with a minimal team, spawn devs on demand:
+- **Skeleton (always spawned):** planner, devils-advocate, archivist
+- **On demand:** frontend-dev, backend-dev, swift-dev, reviewer, tester, etc.
+
+This saves resources — devs only spawn when there's actual implementation work.
 
 ## # Commands
 
-For detailed instructions and workflow rules, refer to [teamlead_example.md](./teamlead_example.md).
+For detailed instructions and workflow rules, refer to [.claude/agents/teamlead.md](./.claude/agents/teamlead.md).
 
--   `#organizetmux`: Create an agent team with a natural language prompt, requiring `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
+-   `#team`: Create skeleton agent team (planner, devils-advocate, archivist). Uses TeamCreate + Agent tools.
 -   `#plan`: Create and refine an implementation plan through planner/devils-advocate iteration.
 -   `#teamtask`: Initiates a full planning-implementation-review workflow for a given task.
--   `#teamgo`: Finds and starts the next planned task from the `BACKLOG.md` if `frontend-dev` and `backend-dev` are idle.
--   `#review`: (Implied within `#teamtask`) Sends completed code to `reviewer` for approval.
+-   `#teamgo`: Finds and starts the next planned task from the `BACKLOG.md` if devs are idle.
 -   `#ready`: Finalize a completed task by cleaning up debug statements, updating task status in documentation, and staging all files.
 -   `#commit`: Commits staged changes with a formatted message, but does not push.
--   `#test`: (Implied as part of the overall workflow) Involves presenting a test plan for manual verification.
+-   `#rct`: Chain command — #ready → #commit → #teamgo in sequence.
 
 ## Project-Level Discord Bot Setup
 
