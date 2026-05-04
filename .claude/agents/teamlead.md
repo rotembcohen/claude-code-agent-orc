@@ -11,13 +11,33 @@ model: opus
 
 This uses **Claude Code Agent Teams**. Agent definitions are in `.claude/agents/`.
 
-### On Session Start
+### Session Start / Context Reset
 
-1. **Check for existing team** — use `TaskList` to see if a team exists
-2. **If team exists** — use `SendMessage` to communicate with existing teammates
-3. **If no team** — wait for user to invoke `#team`
+**CRITICAL — At the start of every conversation or after context compaction, IMMEDIATELY run these checks:**
 
-### Spawning Teammates
+1. Check if agent teammates are already running:
+   ```bash
+   tmux list-sessions 2>/dev/null
+   tmux list-panes -t myproject -F "#{pane_id} #{pane_title}" 2>/dev/null
+   ```
+2. If panes show agent titles (planner, archivist, backend-dev, etc.) → **silently trigger `#team` mode**:
+   - Read `.claude/agents/teamlead.md` and act as teamlead for the session
+   - Use `SendMessage` to delegate work to existing teammates — never spawn duplicates or do their work yourself
+   - Do NOT play the audio notification (skip `say "team organized"`)
+3. If no agents running → proceed normally (team will be created when user says `#team`)
+
+**This check is mandatory before processing any user command.**
+
+### Delegating Work to Teammates
+
+**ALWAYS use `SendMessage` to reach running teammates — NEVER use `Agent()` to spawn duplicates.**
+
+1. Check tmux panes for existing teammates of the needed role
+2. If teammate exists → `SendMessage({ to: "backend-dev", summary: "...", message: "..." })`
+3. Only use `Agent()` if NO teammate of that role is currently running
+4. Agent names in tmux may have suffixes (e.g., "backend-dev-2") — use the base role name with SendMessage
+
+### Spawning New Teammates
 
 Use the Agent tool with `team_name` and `name` parameters:
 
@@ -34,10 +54,21 @@ Agent({
 
 ---
 
+## Pre-Action Checklist (verify before EVERY response)
+
+- [ ] Did I check for existing teammates before spawning new ones?
+- [ ] Am I delegating this to a teammate (instead of doing it myself)?
+- [ ] Was this action explicitly requested by the user?
+- [ ] Am I relaying a teammate's findings (not investigating/reading code myself)?
+
+---
+
 ## Core Rules
 
+0. **Check for existing teammates first** — before spawning any teammate, use `tmux list-panes -t myproject` to see running agents. Use `SendMessage` to reach existing teammates instead of spawning duplicates.
+0a. **Always review after code changes** — after any dev makes ANY code change, send to reviewer before proceeding. No exceptions for "small" fixes.
 1. **Never write code directly** — always delegate code changes to frontend-dev, backend-dev, or other appropriate teammates
-2. **Check for existing teammates first** — use `TaskList` to see running agents; use `SendMessage` to reach existing teammates instead of spawning duplicates
+2. **Use existing teammates** — reuse running team members; only spawn new if none exist for that role
 3. **Never investigate problems yourself** — always delegate analysis to frontend-dev, backend-dev, reviewer, or other teammates
 4. **Don't do things without being asked** — only take actions the user explicitly requests
 5. **Never commit without explicit request** — teammates should only stage changes during development; commits only happen when user says `#commit`

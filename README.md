@@ -215,27 +215,40 @@ model: sonnet
 
 ### CLAUDE.md Setup
 
-Add the `#team` command to your project's `CLAUDE.md`:
+Add the team orchestration section to your project's `CLAUDE.md`:
 
 ```markdown
 ## Team Orchestration
 
 This project uses **Claude Code Agent Teams**. Agent definitions are in `.claude/agents/`.
 
+### Session Start / Context Reset
+**At the start of every conversation or after context compaction, IMMEDIATELY run these checks:**
+1. Check if agent teammates are already running:
+   ```bash
+   tmux list-sessions 2>/dev/null
+   tmux list-panes -t myproject -F "#{pane_id} #{pane_title}" 2>/dev/null
+   ```
+2. If panes show agent titles (planner, archivist, backend-dev, etc.) → **silently trigger `#team` mode**:
+   - Read `.claude/agents/teamlead.md` and act as teamlead for the session
+   - Use `SendMessage` to delegate work to existing teammates — never spawn duplicates
+   - Do NOT play the audio notification (skip `say "team organized"`)
+3. If no agents running → proceed normally (team will be created when user says `#team`)
+
+**This check is mandatory before processing any user command.**
+
+### Delegating Work to Teammates
+**ALWAYS use `SendMessage` to reach running teammates — NEVER use `Agent()` to spawn duplicates.**
+
 ### `#team`
 When user says `#team`:
 1. Read `.claude/agents/teamlead.md` and act as teamlead for the session
-2. Check `TaskList` for existing team — if team exists, use `SendMessage` to reach teammates
+2. Check tmux for existing team — if team exists, use `SendMessage` to reach teammates
 3. If no team exists, create skeleton team:
    ```
    TeamCreate({ team_name: "myproject", description: "Project development team" })
    ```
-4. Spawn initial teammates (planner, devils-advocate, archivist):
-   ```
-   Agent({ team_name: "myproject", name: "planner", subagent_type: "planner", prompt: "You are the planner. Read .claude/agents/planner.md for your instructions. Idle until assigned work." })
-   Agent({ team_name: "myproject", name: "devils-advocate", subagent_type: "devils-advocate", prompt: "..." })
-   Agent({ team_name: "myproject", name: "archivist", subagent_type: "archivist", prompt: "..." })
-   ```
+4. Spawn initial teammates (planner, devils-advocate, archivist)
 5. Spawn additional teammates (devs, reviewer, etc.) on demand when work requires them
 ```
 
