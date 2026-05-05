@@ -60,6 +60,7 @@ Agent({
 - [ ] Am I delegating this to a teammate (instead of doing it myself)?
 - [ ] Was this action explicitly requested by the user?
 - [ ] Am I relaying a teammate's findings (not investigating/reading code myself)?
+- [ ] If moving from planning to implementation: Did the user explicitly approve the plan?
 
 ---
 
@@ -74,6 +75,32 @@ Agent({
 5. **Never commit without explicit request** — teammates should only stage changes during development; commits only happen when user says `#commit`
 6. **Spawn with proper parameters** — always use `team_name`, `name`, AND `subagent_type` when spawning teammates
 7. **Only notify on completion** — work silently through command steps. Only notify the user when a command is fully complete
+8. **Always get user approval before implementation** — after planning is complete (plan reviewed by devils-advocate, updated by archivist), STOP and present the final plan to the user. Wait for explicit approval before spawning devs. Never assume approval.
+
+---
+
+## Agent Lifecycle: Spawn-on-Demand
+
+**Persistent agents (keep running across tasks):**
+- `archivist` — needs ongoing context about docs/backlog
+
+**On-demand agents (spawn per phase, kill after `#ready`):**
+- `backend-dev` / `frontend-dev` — spawn for implementation, kill after phase complete
+- `reviewer` — spawn for code review, kill after approval
+- `planner` — spawn for planning, kill after plan approved
+- `devils-advocate` — spawn for plan review, kill after review
+
+**Spawn naming:** Use task-specific names like `backend-dev-T###-P1` for clarity.
+
+**Lifecycle:**
+1. Spawn agent with focused prompt at phase start
+2. Agent does its work
+3. Kill agent after `#ready` or when work is done
+4. Fresh spawn for next phase
+
+**Why:** Idle agents consume tokens. Fresh context is cheaper and more reliable than accumulated stale context.
+
+**Kill command:** `tmux kill-pane -t %<pane_id>`
 
 ---
 
@@ -221,6 +248,15 @@ Autonomous experimental feature development. Creates a nightly build with a smal
 6. **Return to develop**: `git checkout develop`
 
 7. **Audio notification**: `say "nightly complete"`
+
+### `#cleantmux`
+Kill stale/duplicate agents from tmux.
+
+1. Run `tmux list-panes -t myproject -F "#{pane_id} #{pane_title}"` to see all agents
+2. Identify which panes are needed for current work (typically: archivist, planner, devils-advocate, backend-dev, frontend-dev, reviewer)
+3. Kill stale panes (old task-specific agents, duplicates) with `tmux kill-pane -t %<pane_id>`
+4. Keep the main teamlead pane
+5. Report what was cleaned up
 
 ---
 

@@ -171,6 +171,8 @@ Agent definitions use **Claude Code Agent Teams** and must be placed in `.claude
 ```
 project-root/
 ├── .claude/
+│   ├── settings.json              # SessionStart hook config
+│   ├── session-start-reminder.txt # Team status check on startup
 │   └── agents/
 │       ├── teamlead.md
 │       ├── planner.md
@@ -189,6 +191,29 @@ project-root/
 ├── .gitignore
 └── README.md
 ```
+
+### SessionStart Hook
+
+The `.claude/settings.json` file configures a hook that runs on every session start:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat .claude/session-start-reminder.txt"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+This automatically reminds Claude to check for running agents and enter teamlead mode if a team is already active.
 
 ### Agent File Format
 

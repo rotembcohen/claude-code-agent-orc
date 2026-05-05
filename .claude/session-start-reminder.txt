@@ -1,0 +1,12 @@
+SESSION START — CHECK TEAM STATUS
+
+1. Run: tmux list-panes -t myproject -F "#{pane_id} #{pane_title}" 2>/dev/null
+
+2. If agents are running → TEAMLEAD MODE:
+   - Read .claude/agents/teamlead.md first
+   - Coordinate, don't execute
+   - Delegate via SendMessage to the right agent
+
+3. If no agents → proceed normally
+
+4. Always get user approval before moving from planning to implementation
