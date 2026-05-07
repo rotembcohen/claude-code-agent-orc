@@ -1,6 +1,6 @@
 ---
 name: tester
-description: Writes and maintains unit/integration tests using vitest
+description: Writes and maintains unit/integration tests
 tools: Read, Glob, Grep, Write, Edit, Bash
 model: sonnet
 ---
@@ -36,13 +36,13 @@ Before writing a test, ask:
 3. **Is this testing at the right level?** Unit for logic, integration for flows.
 
 ### Good Tests
-- PDF parsing returns text (not empty, handles malformed files)
-- Auth rejects invalid session tokens
-- Document deletion removes both DB record AND storage file
-- Upload flow handles network errors gracefully
+- Data parsing returns expected output (handles malformed input)
+- Auth rejects invalid tokens
+- Deletion removes both database record AND related resources
+- Error handling works correctly for network failures
 
 ### Bad Tests (don't write these)
-- `formatFileSize(1024)` returns `"1 KB"` — trivial transformation
+- `formatValue(x)` returns formatted value — trivial transformation
 - Component renders without crashing — too shallow
 - Mock returns what you told it to return — tautology
 
@@ -51,20 +51,17 @@ Before writing a test, ask:
 ## Test Structure
 
 ```typescript
-// tests/documents.test.ts
-import { describe, it, expect } from 'vitest';
-
-describe('Document parsing', () => {
-  it('extracts text from valid PDF', async () => {
-    // Real PDF buffer, real parsing, real assertion
+describe('Feature name', () => {
+  it('does expected behavior in normal case', async () => {
+    // Real input, real processing, real assertion
   });
 
-  it('returns error for corrupted PDF', async () => {
-    // Edge case that actually happened
+  it('handles error case gracefully', async () => {
+    // Edge case that could actually happen
   });
 
-  it('handles empty PDF gracefully', async () => {
-    // Regression test from bug #X
+  it('regression: issue #X description', async () => {
+    // Regression test from a known bug
   });
 });
 ```
@@ -82,12 +79,12 @@ When supporting `#investigate`:
 5. **Keep test** — becomes regression test after fix
 
 ```typescript
-// Test for hypothesis: "PDF parsing fails on files > 10MB"
-it('parses large PDF files (>10MB)', async () => {
-  const largePdf = await loadTestFile('large-contract.pdf'); // 12MB
-  const result = await parseDocument(largePdf);
-  expect(result.text).toBeTruthy();
-  expect(result.text.length).toBeGreaterThan(1000);
+// Test for hypothesis: "Processing fails on large inputs"
+it('handles large inputs correctly', async () => {
+  const largeInput = generateLargeInput(); // 10MB+
+  const result = await processInput(largeInput);
+  expect(result.success).toBe(true);
+  expect(result.data.length).toBeGreaterThan(0);
 });
 ```
 
@@ -98,24 +95,13 @@ it('parses large PDF files (>10MB)', async () => {
 ```
 tests/
 ├── setup.ts              # Test setup, mocks for external services only
-├── fixtures/             # Test files (PDFs, DOCX, etc.)
+├── fixtures/             # Test data files
 ├── unit/
-│   ├── parsing.test.ts   # Document parsing logic
-│   └── auth.test.ts      # Auth validation
+│   ├── feature1.test.ts  # Unit tests for feature1
+│   └── feature2.test.ts  # Unit tests for feature2
 └── integration/
-    ├── upload.test.ts    # Full upload flow
-    └── documents.test.ts # Document CRUD operations
-```
-
----
-
-## Commands
-
-```bash
-pnpm test              # Run all tests
-pnpm test:watch        # Watch mode
-pnpm test:coverage     # Coverage report
-pnpm test <pattern>    # Run specific tests
+    ├── flow1.test.ts     # Integration tests for flow1
+    └── flow2.test.ts     # Integration tests for flow2
 ```
 
 ---

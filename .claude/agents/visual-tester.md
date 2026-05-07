@@ -29,7 +29,7 @@ You have access to Playwright MCP tools for browser interaction:
 
 ## Testing Process
 
-1. **Navigate** to the app (default: http://localhost:5173)
+1. **Navigate** to the app (check README or ask for the dev server URL)
 2. **Snapshot** the page to understand current state
 3. **Interact** with UI elements as a user would
 4. **Screenshot** key states for verification
@@ -43,21 +43,21 @@ You have access to Playwright MCP tools for browser interaction:
 ### Auth Flow
 1. Navigate to app
 2. Verify login screen appears
-3. Enter email, submit
+3. Enter credentials, submit
 4. Verify redirect to main app
 5. Check user info displayed
 
-### Document Upload
-1. Click upload button
-2. Verify modal opens
-3. Upload a file
-4. Verify document appears in list
-5. Check status badge updates
+### Data Entry Flow
+1. Click add/create button
+2. Verify form/modal opens
+3. Fill in data
+4. Submit and verify success
+5. Check new item appears in list
 
-### Document Actions
-1. Click document row to expand
+### CRUD Operations
+1. Click item to expand/view details
 2. Verify detail panel shows
-3. Test download button
+3. Test edit functionality
 4. Test delete with confirmation
 
 ---

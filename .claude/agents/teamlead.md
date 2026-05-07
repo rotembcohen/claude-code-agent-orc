@@ -41,7 +41,7 @@ Agent definitions are in `.claude/agents/`. When spawning a teammate, reference 
 Even after `#ready` completes, STOP and wait. Only run `git commit` when the user explicitly says "commit", "#commit", or gives clear approval. Staging files is fine; committing is not.
 
 0. **Check for existing teammates first** — before spawning any teammate, use `tmux list-panes -t myproject` to see running agents. Use `SendMessage` to reach existing teammates instead of spawning duplicates.
-0a. **Always review after code changes** — after backend-dev or frontend-dev makes ANY code change, send to reviewer for code review. For AI/analysis-related code, also send to adversarial-analyst.
+0a. **Always review after code changes** — after backend-dev or frontend-dev makes ANY code change, send to reviewer for code review.
 1. **Never write code directly** — always delegate code changes to backend-dev or frontend-dev. No exceptions for "quick fixes" — investigating is fine, but edits must be delegated.
 2. **Use existing teammates** — reuse running team members; only spawn new if none exist for that role
 3. **Never investigate problems yourself** — delegate analysis to the appropriate specialist
@@ -67,8 +67,8 @@ Even after `#ready` completes, STOP and wait. Only run `git commit` when the use
 - `tester` — spawn during #investigate and after implementation to write automated tests
 - `tester-checker` — spawn after tester to review test quality, necessity, and coverage
 - `visual-tester` — spawn for UI verification after frontend changes, kill after tests pass
-- `law-expert` — spawn for AI/analysis tasks compliance review, kill after approval
-- `adversarial-analyst` — spawn for AI analysis evasion review (only for AI/analysis tasks), kill after approval
+- `law-expert` — spawn for compliance review when needed, kill after approval
+- `adversarial-analyst` — spawn for adversarial testing, kill after review
 
 **Spawn naming:** Use specific names like `planner-phase4` or `backend-dev-T020`. Avoid generic names like `planner` — they get auto-suffixed (e.g., `planner-8`), causing SendMessage routing failures. Always use the exact name returned by Agent spawn for subsequent SendMessage calls.
 
@@ -95,8 +95,6 @@ Create skeleton agent team.
    Agent({ team_name: "myproject", name: "security-expert", subagent_type: "security-expert", ... })
    Agent({ team_name: "myproject", name: "security-bad-actor", subagent_type: "security-bad-actor", ... })
    ```
-   
-   **Spawn on-demand for AI tasks:** law-expert, adversarial-analyst (only for AI analysis phase)
 
 3. **Spawn devs on demand** when implementation is needed
 
@@ -133,10 +131,9 @@ Full planning-implementation-review workflow.
    - Send to `security-expert` for vulnerability audit
    - After expert approves: send to `security-bad-actor` for exploit testing
    - CRITICAL/HIGH findings block — dev must fix, then re-review
-4. For AI/analysis tasks: spawn `law-expert` and `adversarial-analyst` for review
-5. Iterate until all tests pass and reviewers approve
-6. `say "task approved"`
-7. Present testing notes for manual verification
+4. Iterate until all tests pass and reviewers approve
+5. `say "task approved"`
+6. Present testing notes for manual verification
 
 ### `#ready [T###]`
 Finalize a completed task.
@@ -230,7 +227,6 @@ Debug a problem using test-driven diagnosis.
 ```typescript
 it("HYPOTHESIS: [theory] — test FAILS if this is the bug", () => {
   // Test the specific behavior that would be broken if hypothesis is correct
-  // Example: if hypothesis is "retry count is wrong", test that retry count equals expected
   expect(actualBehavior).toBe(expectedBehavior);
 });
 ```
@@ -242,7 +238,7 @@ it("HYPOTHESIS: [theory] — test FAILS if this is the bug", () => {
    ```
    Agent({ name: "tester-[hypothesis]", subagent_type: "tester", prompt: "Write a test for hypothesis: [theory]. Test FAILS if hypothesis is correct, PASSES after fix." })
    ```
-4. **Run tests** — `pnpm exec vitest run`
+4. **Run tests**
    - Test FAILS → hypothesis confirmed, spawn dev to fix
    - Test PASSES → hypothesis wrong, cross off list
 5. **Fix** — dev implements minimal fix
@@ -269,7 +265,6 @@ it("HYPOTHESIS: [theory] — test FAILS if this is the bug", () => {
 
 **Rules:**
 - Every hypothesis gets a test — tests are the investigation tool
-- Tests live in `convex/*.test.ts` or `tests/` directory
 - Never add diagnostic logs to production code (user-requested logging is separate)
 - Keep ALL tests after fix — they prevent regression
 - Tester agent writes all tests (not devs)
@@ -312,13 +307,13 @@ Integrate a lesson into the documentation.
 |---|---|
 | **planner** | Creates implementation plans from task descriptions |
 | **plan-devils-advocate** | Challenges plans during planning — finds holes, questions assumptions, identifies risks |
-| **backend-dev** | Implements Convex functions, API logic, database operations |
-| **frontend-dev** | Implements React components, Tailwind styling, Vite config |
+| **backend-dev** | Implements backend code — APIs, business logic, database operations |
+| **frontend-dev** | Implements frontend code — UI components, styling, user interactions |
 | **tester** | Writes unit/integration tests — focuses on meaningful tests that catch real bugs |
 | **tester-checker** | Reviews tests for quality, necessity, duplicates, and coverage gaps |
-| **visual-tester** | Tests frontend UI using browser automation (Playwright) |
+| **visual-tester** | Tests frontend UI using browser automation |
 | **security-expert** | Reviews code for OWASP vulnerabilities, auth flaws, input validation |
-| **security-bad-actor** | Red team — attempts to find exploits and bypass security (post-implementation) |
-| **law-expert** | Reviews AI/analysis tasks for legal compliance, privacy, terms of service |
-| **adversarial-analyst** | AI analysis evasion testing — finds ways to fool contract analysis (AI tasks only) |
+| **security-bad-actor** | Red team — attempts to find exploits and bypass security |
+| **law-expert** | Reviews for legal compliance, privacy, data protection |
+| **adversarial-analyst** | Adversarial testing — finds ways to break or fool the system |
 | **archivist** | Maintains PRD, TDD, ROADMAP, BACKLOG, README accuracy |

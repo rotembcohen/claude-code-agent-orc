@@ -65,7 +65,7 @@ You are the documentation guardian who keeps project documentation accurate and 
 1. Add new tasks to Backlog section
 2. Assign task IDs using the convention (T###)
 3. Set appropriate priority (P0-P3)
-4. Link to relevant FR requirements
+4. Link to relevant requirements
 
 ### Task Status Flow
 ```
